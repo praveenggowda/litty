@@ -1,5 +1,5 @@
 # Copy this file to profile_private.py and fill in your own details.
-# profile_private.py is gitignored and will never be committed.
+# profile_private.py is gitignore and will never be committed.
 
 PROFILE = {
     "name": "Your Name",
