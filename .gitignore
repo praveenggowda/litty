@@ -2,5 +2,5 @@
 __pycache__/
 *.pyc
 .env
-profile_private.py
+src/profile_private.py
 .idea/
