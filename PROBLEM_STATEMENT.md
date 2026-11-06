@@ -15,9 +15,9 @@ Every change raised the keyword match. Every change made the CV less true. A rec
 
 Keyword match and honesty pull in opposite directions, and existing tools quietly choose keywords. Litty must choose honesty: get as close to the job as the candidate's real experience allows, and show exactly where it had to stop.
 
-## What You Need to Build
+## What Litty Must Do
 
-For each job description, build a system that determines:
+For each job description, Litty works out:
 
 * what the job really asks for, with each requirement marked `REQUIRED` or `DESIRABLE`;
 * how well the candidate fits, with evidence for every requirement;
@@ -225,11 +225,7 @@ Every case below is in the evaluation set with an expected outcome.
 | Approved changes push the CV past its page count | Candidate told before building. |
 | Cover letter would say "I admire your mission" with no input | Not said. |
 
-## Out of Scope for Release 1
-
-Job search and alerts, applying to jobs, LinkedIn or job board integration, interview preparation, application form questions, multiple users, languages other than English, templates other than DOCX, building a CV from scratch, redesigning the template.
-
-## Submission
+## What Release 1 Delivers
 
 | Item | Description |
 | --- | --- |
@@ -238,7 +234,7 @@ Job search and alerts, applying to jobs, LinkedIn or job board integration, inte
 | `evaluation/evaluation_report.md` | Every metric against its target, a table of mismatch categories, failures found, root causes, and what was changed or deliberately not changed. |
 | `evaluation/usage_report.md` | For the final full run: p50 and p95 time per step, model calls, input and output tokens, cost per application, and the baseline comparison. |
 | `DECISIONS.md` | Every significant decision, written by you: the options, the choice, why, and how you would know it was wrong. Includes which parts need AI and which do not. |
-| Walkthrough | Your own "AI interview": take one sentence from a generated CV and explain, without help, where it came from, which step produced it and which checks it passed. |
+| Walkthrough | Take one sentence from a generated CV and explain, without help, where it came from, which step produced it and which checks it passed. |
 
 Do not include API keys or personal data in the repo.
 
@@ -262,5 +258,5 @@ Decide these before building the affected step. The default applies until you do
 * Every hard gate passes.
 * Every quality and speed target is met, or the miss is explained in the evaluation report with its root cause.
 * Every test case passes.
-* Every submission item is complete.
+* Everything in What Release 1 Delivers is complete.
 * You wrote the core logic yourself, and diagnosed at least three evaluation failures yourself before asking an AI.
