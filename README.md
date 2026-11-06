@@ -1,25 +1,48 @@
-# Litty
+# Litty 💡
 
-Your AI career companion.
+An AI agent that helps your real experience shine.
 
-Litty learns who you are. Your experience, skills, preferences, visa status, and what you will and will not compromise on. Then it searches for jobs, scores each one against your profile, and tells you apply or skip.
+Every job is different, but most of us send the same CV everywhere. Litty changes that. Give Litty a job description or a job link. It understands the role, gets to know your experience, and helps you create a CV tailored to that opportunity, without changing your story.
 
-Not a job board. Not a resume builder. A companion that knows you.
+Just you, at your best.
 
-## What Litty does
+## What Litty knows about you
 
-1. Reads your personal profile (experience, stack, rate, visa, preferences)
-2. Searches for matching jobs
-3. Scores each job against your profile using AI
-4. Returns a ranked list with apply / skip / maybe verdict and one line reason
-5. Generates a tailored CV and cover letter for every apply, written in your voice
+* Your experience and projects
+* Your skills and technology stack
+* Your achievements and qualifications
+* Your STAR stories and the production incidents you’ve handled
+* Your career preferences
 
-## Why Litty
+## How it works
 
-Every job board shows you the same jobs. None of them know you.
+1. Share a job description or job URL.
+2. See how well you fit the role.
+3. Review and approve Litty's suggestions.
+4. Get your tailored CV.
+5. Want a cover letter? Just ask.
 
-Litty knows your stack, your rate, your visa constraints, what you have built, how you write, and what you will not compromise on. That context is what makes the difference between a generic cover letter and one that sounds like you wrote it yourself.
+## The promise
+
+* Only your real experience.
+* No exaggeration.
+* Every line traces back to your profile.
+* Nothing changes without your approval.
+
+## Why Litty?
+
+Inspired by the word *lit*: to brighten things up. Litty is about bringing your experience to light and helping you present the best version of yourself.
+
+## Getting started
+
+```bash
+cd litty
+pip install -r requirements.txt
+python main.py
+```
 
 ## Status
 
-Phase 1 in progress. See [PLAN.md](PLAN.md) for the full build roadmap.
+Litty is in its early stages of development. It’s being built step by step.
+
+See [PROBLEM_STATEMENT.md](PROBLEM_STATEMENT.md) for the detailed requirements.
