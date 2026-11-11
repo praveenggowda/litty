@@ -2,20 +2,23 @@
 
 How Litty is built.
 
-> **Status:** not designed yet. Design starts after the [data model](data-model.md) and the [workflow](workflow.md) are settled.
+> **Status:** Not designed yet. Architecture design begins after the [data model](data-model.md) and [workflow](workflow.md) are agreed.
 
 ## Principles
 
-* Build the simplest system that satisfies the [trust rules](../PROBLEM_STATEMENT.md#trust-rules).
-* Use AI only where a step needs language understanding. Use plain code for everything that can be checked exactly.
-* The step that writes a claim never approves it. Claims are checked separately.
-* Write the workflow as plain code first. Adopt a framework only when the code shows a need for one.
-* Adopt retrieval, extra agents or new tools only when an evaluation result justifies it.
+1. Build the simplest system that satisfies Litty’s [trust requirements](../PROBLEM_STATEMENT.md#trust-rules).
+2. Use AI where language understanding and reasoning are needed. Use deterministic code wherever possible.
+3. The component that generates a claim must not approve it. Validation must happen independently.
+4. Design and implement the workflow in plain code first. Adopt a workflow framework only when a demonstrated need justifies it.
+5. Introduce retrieval, additional agents or external tools only when evaluation results demonstrate a need.
+6. Keep business rules independent of the AI model and orchestration framework.
 
-## Questions this document will answer
+## Questions This Document Will Answer
 
-* What are the main components, and what is each one responsible for?
-* How does data flow between them?
-* Where are the profile, runs and generated documents stored?
-* How are trust rules enforced: which checks are exact, and which need judgement?
-* How are model calls made, retried and recorded?
+* What are the main components, and what is each responsible for?
+* How does data flow between components?
+* Where are profiles, evidence, workflow runs and generated documents stored?
+* How are trust requirements enforced? Which checks are deterministic, and which require AI-assisted judgement?
+* How are model calls managed, retried and recorded?
+* How does the system handle failures, interruptions and workflow recovery?
+* How are security, privacy and access controls enforced?
