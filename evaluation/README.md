@@ -32,7 +32,8 @@ The labels reference real candidate evidence, so the real dataset stays out of t
 
 | Target | Measurement |
 | --- | --- |
-| Unsupported claims | Manually review every claim in every generated CV and cover letter against its cited evidence. |
+| Unsupported claims | Manually review every claim in every generated CV, cover letter and chat answer against its cited evidence. |
+| Chat behaviour | Run the chat test cases and check each answer, refusal and suggestion card against its expected outcome. |
 | Evidence traceability | Check by code that every factual claim has a valid evidence reference. |
 | Exact facts and attribution | Check names, titles, dates, numbers and employer/project attribution against the profile. |
 | Requirements recall | Correctly identified labelled requirements divided by all labelled requirements. |
@@ -67,7 +68,7 @@ The confidence bound is an estimate, not proof of universal accuracy.
 
 Both reports are generated from the final complete evaluation run.
 
-### `evaluation_report.md`
+### `evaluation-report.md`
 
 Contains:
 
@@ -79,7 +80,7 @@ Contains:
 * Changes made or deliberately not made.
 * Factual accuracy results and confidence bound.
 
-### `usage_report.md`
+### `usage-report.md`
 
 Contains:
 

@@ -34,7 +34,7 @@ Every evidence item has:
 | Field | Meaning |
 | --- | --- |
 | `id` | Unique and stable. Never reused. |
-| `source` | Where it came from: `master_cv`, `profile` or `added_in_review`. |
+| `source` | Where it came from: `master_cv`, `profile` or `added_by_candidate` (a new fact confirmed during a run, through review or Add fact in chat). |
 | `type` | Role, responsibility, achievement, skill, qualification, STAR story, incident, etc. |
 | `employer` or `project` | What it belongs to, where applicable. |
 | `period` | Start and end dates, where applicable. |
@@ -71,7 +71,7 @@ Made-up data:
 
 1. The master CV is never overwritten.
 2. A tailored CV never becomes evidence by itself.
-3. New facts added during review are saved only after candidate approval, with source `added_in_review` and the date.
+3. New facts added during a run are saved only after candidate confirmation, with source `added_by_candidate`, the date and the run they came from.
 4. Every evidence item retains its original source and context.
 5. Superseded evidence is retained for historical traceability.
 6. Each workflow run references the exact profile version used.

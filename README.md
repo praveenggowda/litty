@@ -22,7 +22,7 @@ Just you, at your best.
 2. See how well you fit the role.
 3. Review and approve Litty’s suggestions.
 4. Get your tailored CV.
-5. Want a cover letter? Just ask.
+5. Want a cover letter? It’s one click away.
 
 ## The promise
 

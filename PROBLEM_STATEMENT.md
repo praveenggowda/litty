@@ -47,9 +47,22 @@ The candidate controls the profile. A new fact is saved only when the candidate 
 
 ## Input
 
-The only input is the job: one job per run.
+The only input is the job: one job per run, given as exactly one of a job URL or pasted job text.
 
-The candidate gives the job URL first. If the URL cannot be read (login wall, expired, wrong page), Litty says why and asks for the pasted job description. It never analyses the wrong page silently.
+| Situation | Litty |
+| --- | --- |
+| URL readable, one specific job, complete | Continues with the extracted text. |
+| URL inaccessible (login, expired, fetch failed) | Explains why and asks for pasted job text. |
+| URL readable, but not one specific job (careers homepage, several vacancies) | Asks which role the candidate wants. |
+| Job text incomplete | Explains what is missing and asks for the complete job text. |
+
+A job description is **complete** when it names a specific role, gives enough context to understand it, and has at least one identifiable responsibility or requirement. Skills, technology stack, experience and desirable skills are extracted when present but are not mandatory.
+
+The candidate can replace extracted text with pasted text. Pasted text goes through the same completeness and untrusted input checks as extracted text.
+
+Litty never analyses the wrong page, and never continues with incomplete job information without telling the candidate. Once accepted, the job text is the source of truth for the run.
+
+PDF job descriptions are not supported in Release 1.
 
 ## How It Works
 
@@ -124,9 +137,21 @@ The **cannot be claimed** list gives every `MISSING` or `UNKNOWN` required item 
 
 No change can add a skill, achievement or number without evidence. If the candidate edits in a claim with no evidence, Litty flags it, and the candidate either saves it as a new fact or revises it.
 
+A change requested in chat becomes a suggestion card, only during review. It goes through the same allowed change types and trust check as any other change, and needs the same approval.
+
+## Chat
+
+Each job run is one conversation.
+
+The candidate can ask questions about the current job, their profile and the assessment. Litty answers using the same evidence and trust rules as the documents, and declines unrelated requests politely.
+
+Chat never performs workflow actions. Approving, rejecting, building the CV and creating a cover letter always use explicit buttons. A new fact mentioned in chat is saved only through an explicit Add fact action that the candidate confirms.
+
 ## Trust Rules
 
 These are the only rules. Everything else in the project refers back to them. A lower number wins when two rules conflict.
+
+These rules apply to every output, including chat answers.
 
 1. **No invention.** Never invent experience, skills, achievements, numbers, qualifications or dates.
 2. **No exaggeration.** Never inflate scope, seniority, ownership or skill level.
@@ -147,7 +172,7 @@ These are the only rules. Everything else in the project refers back to them. A 
 * A traceability report that maps every claim to its evidence IDs, and every change to an approved suggestion.
 * The final alignment score.
 * A cover letter in DOCX and PDF, with its own traceability report, if requested.
-* A run record: the job text, profile version, evidence used, changes and decisions, and the model and prompt versions. With it, any CV can be explained and reproduced.
+* A run record: the final accepted job text and its source (URL or pasted), profile version, evidence used, changes and decisions, and the model and prompt versions. With it, any CV can be explained and reproduced.
 
 If approved changes would push the CV past the master CV's page count, Litty says so before building.
 
@@ -171,7 +196,7 @@ How each target is measured is in [`evaluation/README.md`](evaluation/README.md)
 
 | Check | Rule | Target |
 | --- | --- | --- |
-| Unsupported claims in any CV or cover letter | 1, 6 | 0 |
+| Unsupported claims in any CV, cover letter or chat answer | 1, 6 | 0 |
 | Claims with an evidence citation | 6 | 100% |
 | Names, titles, dates and numbers matching the source | 3, 5 | 100% |
 | Claims under the right employer and dates | 4 | 100% |
