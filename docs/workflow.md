@@ -6,10 +6,14 @@ How a job moves through Litty, from the URL to the finished CV.
 
 ## Flow
 
-1. **Receive job URL**
-    * Check whether the page is readable.
-    * If readable, extract the job description.
-    * If not, ask the candidate to paste it.
+1. **Receive the job**
+    * Accept exactly one of a job URL or pasted job text.
+    * If a URL is given, try to extract the job description.
+    * If the URL is inaccessible, explain why and ask for pasted text.
+    * If the page does not identify one specific job, ask which role the candidate wants.
+    * Check that the job text (extracted or pasted) is complete. If not, explain what is missing and ask for the complete text.
+    * The candidate can replace extracted text with pasted text. Before review, this invalidates the previous assessment and starts a new attempt.
+    * Continue automatically only when the job text passes validation.
     * Never analyse the wrong or inaccessible page.
 2. **Understand the job**
     * Extract the job requirements.
@@ -37,10 +41,15 @@ How a job moves through Litty, from the URL to the finished CV.
 
 ```mermaid
 flowchart TD
-    A[1. Receive job URL] --> B{Readable?}
-    B -- no --> C[Ask for pasted job description]
-    C --> D
-    B -- yes --> D[2. Understand the job: find requirements]
+    A[1. Receive the job] --> U{URL or pasted text?}
+    U -- URL --> X[Fetch and extract]
+    U -- pasted text --> V
+    X --> V{Accessible, one specific job, complete?}
+    V -- inaccessible or incomplete --> P[Explain and ask for pasted job text]
+    P --> V
+    V -- not one specific job --> R[Ask which role]
+    R --> V
+    V -- yes --> D[2. Understand the job: find requirements]
     D --> E[3. Assess fit: match status, verdict, score]
     E --> F[4. Prepare suggested changes]
     F --> G[Check every change against the trust rules]
@@ -53,6 +62,20 @@ flowchart TD
     K -- yes --> M[7. Write cover letter, validate, build DOCX and PDF]
     M --> L
 ```
+
+## Stages and Steps
+
+The candidate sees five stages. The eight internal steps sit underneath them.
+
+| Stage the candidate sees | Internal steps |
+| --- | --- |
+| 1. Read the job | 1. Receive the job, 2. Understand the job |
+| 2. Assess fit | 3. Assess fit |
+| 3. Review changes | 4. Prepare suggested changes, 5. Review checkpoint |
+| 4. Build CV | 6. Build the CV |
+| 5. Cover letter | 7. Cover letter |
+
+Step 8 (Done) has no stage of its own.
 
 ## The Checkpoint
 
@@ -72,9 +95,13 @@ It does not reread the job description or repeat the entire assessment.
 
 ## Run Record
 
+One conversation is one job run.
+
+A run can have several attempts. Replacing the job text before review starts a new attempt in the same run. Every attempt is kept, and the last one is marked final.
+
 Every run records:
 
-* Job description.
+* Final accepted job text and its source (URL or pasted).
 * Profile version.
 * Evidence used.
 * Requirements and assessments.
