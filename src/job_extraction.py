@@ -1,11 +1,32 @@
+import json
 from urllib.parse import urlparse
 
 import requests
+from bs4 import BeautifulSoup
 
 from src.errors import FailureCategory, JobExtractionError
+from src.models import JobPageContent
+
+NON_CONTENT_TAGS = [
+    "script",
+    "style",
+    "noscript",
+    "svg",
+    "canvas",
+    "template",
+    "meta",
+    "link",
+    "head",
+]
+
+META_TAGS = {
+    "description": {"name": "description"},
+    "og:title": {"property": "og:title"},
+    "og:description": {"property": "og:description"},
+}
 
 
-def extract_job_description(job_url: str) -> str:
+def extract_job_description(job_url: str) -> JobPageContent:
     if job_url:
         job_url = job_url.strip()
 
@@ -60,8 +81,90 @@ def extract_job_description(job_url: str) -> str:
             f"Expected text/html, got {content_type or 'no content type'}",
         )
 
-    html = response.text
-    return html
+    return parse_job_page(response.text)
+
+
+def parse_job_page(html: str) -> JobPageContent:
+    soup = BeautifulSoup(html, "html.parser")
+
+    metadata = _extract_metadata(soup)
+    job_posting = _extract_job_posting(soup)
+
+    for tag in soup.find_all(NON_CONTENT_TAGS):
+        tag.decompose()
+
+    page_text = _tidy_text(soup.get_text(separator="\n"))
+
+    return JobPageContent(
+        metadata=metadata,
+        page_text=page_text,
+        job_posting=job_posting,
+    )
+
+
+def _extract_metadata(soup: BeautifulSoup) -> dict[str, str]:
+    metadata = {}
+
+    if soup.title and soup.title.string:
+        metadata["title"] = soup.title.string.strip()
+
+    for key, attrs in META_TAGS.items():
+        tag = soup.find("meta", attrs=attrs)
+        if tag and tag.get("content"):
+            metadata[key] = tag["content"].strip()
+
+    return metadata
+
+
+def _extract_job_posting(soup: BeautifulSoup) -> dict | None:
+    tags = soup.find_all("script", type="application/ld+json")
+
+    for tag in tags:
+        try:
+            data = json.loads(tag.get_text())
+        except json.JSONDecodeError:
+            continue
+
+        if isinstance(data, dict) and "@graph" in data:
+            data = data["@graph"]
+
+        if isinstance(data, dict):
+            candidates = [data]
+        elif isinstance(data, list):
+            candidates = data
+        else:
+            continue
+
+        for candidate in candidates:
+            if not isinstance(candidate, dict):
+                continue
+
+            job_type = candidate.get("@type")
+
+            if isinstance(job_type, str):
+                job_types = [job_type]
+
+            elif isinstance(job_type, list):
+                job_types = job_type
+
+            else:
+                continue
+
+            # "https://schema.org/JobPosting" -> "JobPosting"
+            if any(
+                type_name.rstrip("/").split("/")[-1] == "JobPosting"
+                for type_name in job_types
+                if isinstance(type_name, str)
+            ):
+                return candidate
+
+    return None
+
+
+def _tidy_text(text: str) -> str:
+    lines = text.splitlines()
+    tidy_lines = [line.strip() for line in lines if line.strip()]
+    return "\n".join(tidy_lines)
 
 
 def _is_valid_url(url: str) -> bool:

@@ -19,8 +19,14 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    html = extract_job_description(args.job_url)
-    logger.info("Extracted %d characters from %s", len(html), args.job_url)
+    job_page = extract_job_description(args.job_url)
+    logger.info(
+        "Extracted %d characters, %d metadata fields, job posting found: %s from %s",
+        len(job_page.page_text),
+        len(job_page.metadata),
+        job_page.job_posting is not None,
+        args.job_url,
+    )
 
 
 if __name__ == "__main__":
