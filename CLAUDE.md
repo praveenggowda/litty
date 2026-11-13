@@ -129,6 +129,28 @@ All implementation decisions must respect the project’s documentation:
 
 Never introduce functionality outside the agreed Release 1 scope without discussing it first.
 
+The UI mockup is at [docs/images/ui-agent-mockup.png](docs/images/ui-agent-mockup.png). It is an early sketch, not a final design.
+
+## How we build
+
+Litty grows in increments: Skateboard → Bicycle → Motorbike → Car → Aeroplane.
+
+Each increment is a usable product that builds on the previous one.
+
+For every increment, I define:
+
+* Its scope and what we are trying to achieve.
+* What is included and what is excluded.
+* How we will test it.
+
+The documentation describes the destination, not the scope of the current increment. Keep the full vision in mind, but focus only on what we are building now.
+
+* Avoid unnecessary abstractions, frameworks, infrastructure and premature optimisation.
+* Avoid decisions that unnecessarily block future evolution. If a choice would, point it out.
+* Wait for my instructions before proposing implementation tasks or writing code.
+
+Build something small that works. Understand it. Test it. Improve it. Then move forward.
+
 ## Most important instruction
 
 I want to understand and remember the code I write.
