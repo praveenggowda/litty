@@ -1,3 +1,4 @@
 pytest
 requests
 ruff
+beautifulsoup4
