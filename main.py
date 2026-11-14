@@ -3,7 +3,7 @@ import logging
 import sys
 
 from src.errors import JobExtractionError
-from src.job_extraction import extract_job_description
+from src.job_extraction import fetch_job_page, parse_job_page
 from src.user_messages import DEFAULT_FRIENDLY_MESSAGE, FRIENDLY_MESSAGES
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,8 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    job_page = extract_job_description(args.job_url)
+    html = fetch_job_page(args.job_url)
+    job_page = parse_job_page(html)
     logger.info(
         "Extracted %d characters, %d metadata fields, job posting found: %s from %s",
         len(job_page.page_text),

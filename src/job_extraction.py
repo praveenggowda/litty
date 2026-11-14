@@ -26,7 +26,7 @@ META_TAGS = {
 }
 
 
-def extract_job_description(job_url: str) -> JobPageContent:
+def fetch_job_page(job_url: str) -> str:
     if job_url:
         job_url = job_url.strip()
 
@@ -81,7 +81,7 @@ def extract_job_description(job_url: str) -> JobPageContent:
             f"Expected text/html, got {content_type or 'no content type'}",
         )
 
-    return parse_job_page(response.text)
+    return response.text
 
 
 def parse_job_page(html: str) -> JobPageContent:
@@ -100,6 +100,15 @@ def parse_job_page(html: str) -> JobPageContent:
         page_text=page_text,
         job_posting=job_posting,
     )
+
+
+def _is_valid_url(url: str) -> bool:
+    try:
+        parsed_url = urlparse(url)
+
+        return parsed_url.scheme in ("http", "https") and bool(parsed_url.hostname)
+    except ValueError:
+        return False
 
 
 def _extract_metadata(soup: BeautifulSoup) -> dict[str, str]:
@@ -165,12 +174,3 @@ def _tidy_text(text: str) -> str:
     lines = text.splitlines()
     tidy_lines = [line.strip() for line in lines if line.strip()]
     return "\n".join(tidy_lines)
-
-
-def _is_valid_url(url: str) -> bool:
-    try:
-        parsed_url = urlparse(url)
-
-        return parsed_url.scheme in ("http", "https") and bool(parsed_url.hostname)
-    except ValueError:
-        return False
