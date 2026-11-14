@@ -7,6 +7,9 @@ from bs4 import BeautifulSoup
 from src.errors import FailureCategory, JobExtractionError
 from src.models import JobPageContent
 
+REQUEST_TIMEOUT_SECONDS = 10
+USER_AGENT = "Litty/1.0"
+
 NON_CONTENT_TAGS = [
     "script",
     "style",
@@ -35,15 +38,17 @@ def fetch_job_page(job_url: str) -> str:
     if not _is_valid_url(job_url):
         raise JobExtractionError(FailureCategory.INVALID_URL, f"Invalid URL: {job_url}")
 
-    headers = {"User-Agent": "Litty/1.0"}
+    headers = {"User-Agent": USER_AGENT}
 
     try:
-        response = requests.get(job_url, headers=headers, timeout=10)
+        response = requests.get(
+            job_url, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS
+        )
         response.raise_for_status()
     except requests.exceptions.Timeout as error:
         raise JobExtractionError(
             FailureCategory.INACCESSIBLE,
-            "Request timed out after 10 seconds",
+            f"Request timed out after {REQUEST_TIMEOUT_SECONDS} seconds",
         ) from error
     except requests.exceptions.SSLError as error:
         raise JobExtractionError(
@@ -148,13 +153,13 @@ def _extract_job_posting(soup: BeautifulSoup) -> dict | None:
             if not isinstance(candidate, dict):
                 continue
 
-            job_type = candidate.get("@type")
+            schema_type = candidate.get("@type")
 
-            if isinstance(job_type, str):
-                job_types = [job_type]
+            if isinstance(schema_type, str):
+                schema_types = [schema_type]
 
-            elif isinstance(job_type, list):
-                job_types = job_type
+            elif isinstance(schema_type, list):
+                schema_types = schema_type
 
             else:
                 continue
@@ -162,7 +167,7 @@ def _extract_job_posting(soup: BeautifulSoup) -> dict | None:
             # "https://schema.org/JobPosting" -> "JobPosting"
             if any(
                 type_name.rstrip("/").split("/")[-1] == "JobPosting"
-                for type_name in job_types
+                for type_name in schema_types
                 if isinstance(type_name, str)
             ):
                 return candidate

@@ -2,7 +2,7 @@ import pytest
 import requests.exceptions
 
 from src.errors import FailureCategory, JobExtractionError
-from src.job_extraction import fetch_job_page
+from src.job_extraction import fetch_job_page, parse_job_page
 
 JOB_URL = "https://example.com"
 
@@ -26,6 +26,7 @@ class TestFetchJobPage:
             "        ",
             None,
         ],
+        ids=["empty", "whitespace", "none"],
     )
     def test_rejects_missing_url(self, job_url):
         with pytest.raises(JobExtractionError) as exc_info:
@@ -44,6 +45,7 @@ class TestFetchJobPage:
             "https://",
             "http://[invalid",
         ],
+        ids=["no_scheme", "ftp", "file", "javascript", "no_host", "malformed"],
     )
     def test_rejects_invalid_url(self, job_url):
         with pytest.raises(JobExtractionError) as exc_info:
@@ -82,7 +84,9 @@ class TestFetchJobPage:
         assert exc_info.value.__cause__ is error
 
     @pytest.mark.parametrize(
-        "content_type", ["application/pdf", "application/json", ""]
+        "content_type",
+        ["application/pdf", "application/json", ""],
+        ids=["pdf", "json", "missing"],
     )
     def test_rejects_unsupported_content_type(self, monkeypatch, content_type):
         def fake_get(*args, **kwargs):
@@ -124,11 +128,126 @@ class TestFetchJobPage:
         assert fetch_job_page(f"  {JOB_URL}  ") == "<p>Hi</p>"
 
 
-# TODO: TestParseJobPage
-# - empty or blank html -> empty metadata, empty page_text, job_posting None
-# - title, description and og: tags extracted; missing ones absent
-# - JSON-LD JobPosting found directly, inside @graph, and with @type as list/URL
-# - malformed JSON-LD or only non-JobPosting types -> job_posting None
-# - script and style text not in page_text
-# - blank lines and indentation tidied in page_text
-# - header and footer text kept (hidden blockers, e.g. "must hold DV clearance")
+class TestParseJobPage:
+    @pytest.mark.parametrize("html", ["", "     "], ids=["empty", "whitespace"])
+    def test_returns_empty_content_for_blank_html(self, html):
+        job_page = parse_job_page(html)
+
+        assert job_page.metadata == {}
+        assert job_page.page_text == ""
+        assert job_page.job_posting is None
+
+    def test_extracts_metadata(self):
+        html = """
+            <html>
+              <head>
+                <title>  Senior .NET Engineer - Acme  </title>
+                <meta name="description" content="Join our platform team.">
+                <meta property="og:title" content="Senior .NET Engineer">
+                <meta property="og:description" content="Build reliable services.">
+              </head>
+              <body><p>Job details</p></body>
+            </html>
+            """
+
+        job_page = parse_job_page(html)
+
+        assert job_page.metadata == {
+            "title": "Senior .NET Engineer - Acme",
+            "description": "Join our platform team.",
+            "og:title": "Senior .NET Engineer",
+            "og:description": "Build reliable services.",
+        }
+
+    def test_skips_missing_or_empty_metadata(self):
+        html = """
+            <html>
+              <head>
+                <meta name="description" content="">
+              </head>
+              <body><p>Job details</p></body>
+            </html>
+            """
+
+        job_page = parse_job_page(html)
+
+        assert job_page.metadata == {}
+
+    @pytest.mark.parametrize(
+        "json_ld",
+        [
+            '{"@type": "JobPosting", "title": "Senior .NET Engineer"}',
+            '{"@graph": [{"@type": "WebPage"}, {"@type": "JobPosting", "title": "Senior .NET Engineer"}]}',
+            '{"@type": ["JobPosting"], "title": "Senior .NET Engineer"}',
+            '{"@type": "https://schema.org/JobPosting", "title": "Senior .NET Engineer"}',
+        ],
+        ids=["direct", "graph", "type_list", "type_url"],
+    )
+    def test_extracts_job_posting(self, json_ld):
+        html = f'<script type="application/ld+json">{json_ld}</script>'
+
+        job_page = parse_job_page(html)
+
+        assert job_page.job_posting["title"] == "Senior .NET Engineer"
+
+    @pytest.mark.parametrize(
+        "json_ld",
+        [
+            "{bad json",
+            '{"@type": "Organization", "name": "Acme"}',
+        ],
+        ids=["bad_json", "non_job_posting"],
+    )
+    def test_ignores_invalid_or_non_job_posting_json_ld(self, json_ld):
+        html = f'<script type="application/ld+json">{json_ld}</script>'
+
+        job_page = parse_job_page(html)
+
+        assert job_page.job_posting is None
+
+    def test_removes_non_content_tags_from_page_text(self):
+        html = """
+        <html>
+          <head><title>Senior .NET Engineer</title></head>
+          <body>
+            <script>trackVisitor();</script>
+            <style>.job { color: red; }</style>
+            <noscript>Please enable JavaScript</noscript>
+            <p>Build reliable services.</p>
+          </body>
+        </html>
+        """
+
+        job_page = parse_job_page(html)
+
+        assert job_page.page_text == "Build reliable services."
+
+    def test_tidies_whitespace_in_page_text(self):
+        html = """
+        <body>
+            <h1>   Senior .NET Engineer   </h1>
+
+
+            <p>
+                Build reliable services.
+            </p>
+        </body>
+        """
+
+        job_page = parse_job_page(html)
+
+        assert job_page.page_text == "Senior .NET Engineer\nBuild reliable services."
+
+    def test_keeps_header_and_footer_text(self):
+        html = """
+        <body>
+          <header>Location: London, on site</header>
+          <p>Build reliable services.</p>
+          <footer>Note: you must already hold DV clearance.</footer>
+        </body>
+        """
+
+        job_page = parse_job_page(html)
+
+        assert "Location: London, on site" in job_page.page_text
+        assert "you must already hold DV clearance" in job_page.page_text
