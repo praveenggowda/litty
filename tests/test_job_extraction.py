@@ -164,6 +164,7 @@ class TestParseJobPage:
             <html>
               <head>
                 <meta name="description" content="">
+                <meta property="og:title" content="   ">
               </head>
               <body><p>Job details</p></body>
             </html>

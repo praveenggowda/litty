@@ -129,15 +129,16 @@ def _extract_metadata(soup: BeautifulSoup) -> dict[str, str]:
 
     for key, attrs in META_TAGS.items():
         tag = soup.find("meta", attrs=attrs)
-        if tag and tag.get("content"):
-            metadata[key] = tag["content"].strip()
+        content = tag.get("content") if tag else None
+        if isinstance(content, str) and content.strip():
+            metadata[key] = content.strip()
 
     return metadata
 
 
 def _extract_job_posting(soup: BeautifulSoup) -> dict | None:
     for tag in soup.find_all("script", type="application/ld+json"):
-        for item in _parse_json_ld(tag.text):
+        for item in _parse_json_ld(tag.get_text()):
             if _is_job_posting(item):
                 return _clean_job_posting(item)
 
