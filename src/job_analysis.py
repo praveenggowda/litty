@@ -3,7 +3,7 @@ from textwrap import dedent
 
 from src.models import JobPageContent
 
-MAX_JSON_LD_VALUE_CHARS = 300
+MAX_FIELD_CHARS = 300
 SYSTEM_PROMPT = dedent("""
     You extract facts from a single job advert.
 
@@ -23,7 +23,13 @@ def _build_user_message(job_page: JobPageContent) -> str:
     parts = []
 
     if job_page.metadata:
-        metadata = json.dumps(job_page.metadata, ensure_ascii=False)
+        data = {
+            key: value
+            for key, value in job_page.metadata.items()
+            if len(value) <= MAX_FIELD_CHARS
+        }
+
+        metadata = json.dumps(data, ensure_ascii=False)
         parts.append(f"<metadata>\n{metadata}\n</metadata>")
 
     if job_page.job_posting:
@@ -31,7 +37,7 @@ def _build_user_message(job_page: JobPageContent) -> str:
             key: value
             for key, value in job_page.job_posting.items()
             if key == "description"
-            or not (isinstance(value, str) and len(value) > MAX_JSON_LD_VALUE_CHARS)
+            or not (isinstance(value, str) and len(value) > MAX_FIELD_CHARS)
         }
 
         job_posting = json.dumps(posting, ensure_ascii=False)

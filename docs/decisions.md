@@ -113,11 +113,13 @@ Each entry records the question, options, decision, why, and how we would know i
 * **Decision:**
     1. Extraction is deterministic. Analysis uses AI.
     2. Each page is read into three separate sources: page metadata, the JSON-LD `JobPosting`, and visible page text. They are kept separate because they can be incomplete, outdated or contradictory.
-    3. Only generic transformations are applied: HTML is converted to clean text, long or duplicated values are limited, and visible page text is the primary source when sources disagree. Conflicts are reported, never resolved silently.
-    4. When no usable advert is found, Litty asks the candidate to paste the job text (007). This single fallback covers pages that need JavaScript, pages behind a login or bot protection, adverts inside an iframe, and pages we have not seen before. Completeness validation (007, point 4) decides this, not detection of each page type.
-    5. Non-HTML responses such as PDFs are rejected as unsupported content and the candidate is asked to paste the text.
-    6. A new kind of page becomes an evaluation case, not a code change, unless it reveals a gap that affects a whole category of pages.
-    7. Deferred: site-specific data hidden in ATS scripts (for example salary or experience level), detecting closed adverts, pages with several vacancies (007, point 5), and adverts not in English.
+    3. Only generic transformations are applied: HTML is converted to clean text, and long or duplicated values are limited.
+    4. All three sources are sent for analysis, even when they repeat each other. No single source is always right: visible text can hold no advert at all, and JSON-LD can be outdated or have values in the wrong fields. The duplicated tokens cost little.
+    5. When sources disagree, visible page text is shown by default and the conflict is reported to the candidate, for example "Hybrid (page). Structured data says Remote." Conflicts are never resolved silently.
+    6. When no usable advert is found, Litty asks the candidate to paste the job text (007). This single fallback covers pages that need JavaScript, pages behind a login or bot protection, adverts inside an iframe, and pages we have not seen before. Completeness validation (007, point 4) decides this, not detection of each page type.
+    7. Non-HTML responses such as PDFs are rejected as unsupported content and the candidate is asked to paste the text.
+    8. A new kind of page becomes an evaluation case, not a code change, unless it reveals a gap that affects a whole category of pages.
+    9. Deferred: site-specific data hidden in ATS scripts (for example salary or experience level), detecting closed adverts, pages with several vacancies (007, point 5), and adverts not in English.
 * **Why:** Real pages showed visible text holding the whole advert, visible text holding none of it (the advert only in JSON-LD), JSON-LD with outdated dates, JSON-LD with values in the wrong fields, and key facts only in hidden ATS data. Rules per site would grow without end. One fallback keeps Litty predictable and honest about what it could not read.
 * **How we would know it was wrong:** Candidates often have to paste text for common careers sites, or valid adverts are regularly reported as incomplete.
 

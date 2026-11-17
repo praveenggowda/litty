@@ -31,7 +31,7 @@ META_TAGS = {
 
 
 def fetch_job_page(job_url: str) -> str:
-    job_url = _require_valid_url(job_url)
+    job_url = _validate_url(job_url)
     return _download_html(job_url)
 
 
@@ -40,94 +40,16 @@ def parse_job_page(html: str) -> JobPageContent:
 
     metadata = _extract_metadata(soup)
     job_posting = _extract_job_posting(soup)
-
-    if job_posting and isinstance(job_posting.get("description"), str):
-        job_posting["description"] = _html_to_text(job_posting["description"])
-
-    for tag in soup.find_all(NON_CONTENT_TAGS):
-        tag.decompose()
-
-    page_text = _tidy_text(soup.get_text(separator="\n"))
+    page_text = _extract_page_text(soup)  # must run last: it removes tags from the soup
 
     return JobPageContent(
         metadata=metadata,
-        page_text=page_text,
         job_posting=job_posting,
+        page_text=page_text,
     )
 
 
-def _extract_metadata(soup: BeautifulSoup) -> dict[str, str]:
-    metadata = {}
-
-    if soup.title and soup.title.string:
-        metadata["title"] = soup.title.string.strip()
-
-    for key, attrs in META_TAGS.items():
-        tag = soup.find("meta", attrs=attrs)
-        if tag and tag.get("content"):
-            metadata[key] = tag["content"].strip()
-
-    return metadata
-
-
-def _extract_job_posting(soup: BeautifulSoup) -> dict | None:
-    tags = soup.find_all("script", type="application/ld+json")
-
-    for tag in tags:
-        try:
-            data = json.loads(tag.get_text())
-        except json.JSONDecodeError:
-            continue
-
-        if isinstance(data, dict) and "@graph" in data:
-            data = data["@graph"]
-
-        if isinstance(data, dict):
-            candidates = [data]
-        elif isinstance(data, list):
-            candidates = data
-        else:
-            continue
-
-        for candidate in candidates:
-            if not isinstance(candidate, dict):
-                continue
-
-            schema_type = candidate.get("@type")
-
-            if isinstance(schema_type, str):
-                schema_types = [schema_type]
-
-            elif isinstance(schema_type, list):
-                schema_types = schema_type
-
-            else:
-                continue
-
-            # "https://schema.org/JobPosting" -> "JobPosting"
-            if any(
-                type_name.rstrip("/").split("/")[-1] == "JobPosting"
-                for type_name in schema_types
-                if isinstance(type_name, str)
-            ):
-                return candidate
-
-    return None
-
-
-def _html_to_text(markup: str) -> str:
-    text = unescape(markup)
-    text = BeautifulSoup(text, "html.parser").get_text(separator="\n")
-    return _tidy_text(text)
-
-
-def _tidy_text(text: str) -> str:
-    lines = text.splitlines()
-    tidy_lines = [line.strip() for line in lines if line.strip()]
-    return "\n".join(tidy_lines)
-
-
-def _require_valid_url(job_url: str | None) -> str:
+def _validate_url(job_url: str | None) -> str:
     job_url = (job_url or "").strip()
 
     if not job_url:
@@ -197,3 +119,87 @@ def _download_html(job_url: str) -> str:
         )
 
     return response.text
+
+
+def _extract_metadata(soup: BeautifulSoup) -> dict[str, str]:
+    metadata = {}
+
+    if soup.title and soup.title.string:
+        metadata["title"] = soup.title.string.strip()
+
+    for key, attrs in META_TAGS.items():
+        tag = soup.find("meta", attrs=attrs)
+        if tag and tag.get("content"):
+            metadata[key] = tag["content"].strip()
+
+    return metadata
+
+
+def _extract_job_posting(soup: BeautifulSoup) -> dict | None:
+    for tag in soup.find_all("script", type="application/ld+json"):
+        for item in _parse_json_ld(tag.text):
+            if _is_job_posting(item):
+                return _clean_job_posting(item)
+
+    return None
+
+
+def _parse_json_ld(raw_json: str) -> list[dict]:
+    try:
+        data = json.loads(raw_json)
+    except json.JSONDecodeError:
+        return []
+
+    if isinstance(data, dict) and "@graph" in data:
+        data = data["@graph"]
+
+    if isinstance(data, dict):
+        return [data]
+    if isinstance(data, list):
+        return [item for item in data if isinstance(item, dict)]
+    return []
+
+
+def _is_job_posting(item: dict) -> bool:
+    schema_type = item.get("@type")
+
+    if isinstance(schema_type, str):
+        schema_types = [schema_type]
+    elif isinstance(schema_type, list):
+        schema_types = schema_type
+    else:
+        return False
+
+    return any(
+        type_name.rstrip("/").split("/")[-1] == "JobPosting"
+        for type_name in schema_types
+        if isinstance(type_name, str)
+    )
+
+
+def _clean_job_posting(job_posting: dict) -> dict:
+    description = job_posting.get("description")
+
+    if isinstance(description, str):
+        job_posting["description"] = _html_to_text(description)
+
+    return job_posting
+
+
+def _html_to_text(markup: str) -> str:
+    text = unescape(markup)
+    text = BeautifulSoup(text, "html.parser").get_text(separator="\n")
+    return _tidy_text(text)
+
+
+def _extract_page_text(soup: BeautifulSoup) -> str:
+    for tag in soup.find_all(NON_CONTENT_TAGS):
+        tag.decompose()
+
+    return _tidy_text(soup.get_text(separator="\n"))
+
+
+def _tidy_text(text: str) -> str:
+    lines = text.splitlines()
+    tidy_lines = [line.strip() for line in lines if line.strip()]
+    return "\n".join(tidy_lines)
