@@ -47,8 +47,10 @@ cd litty
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-python main.py
+python main.py <job-url>
 ```
+
+Replace `<job-url>` with the link to a job advert.
 
 On Windows, activate the virtual environment with `.venv\Scripts\activate` instead.
 
