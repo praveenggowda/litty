@@ -1,8 +1,11 @@
 import json
+from collections.abc import Set as AbstractSet
 from textwrap import dedent
 
-from anthropic import Anthropic
+from anthropic import Anthropic, AnthropicError
+from pydantic import ValidationError
 
+from src.errors import FailureCategory, JobAnalysisError
 from src.models import JobAnalysis, JobPageContent
 
 MODEL = "claude-haiku-5-5"
@@ -26,44 +29,83 @@ SYSTEM_PROMPT = dedent("""
 
 def analyse_job_page(job_page: JobPageContent, client: Anthropic) -> JobAnalysis:
     user_message = _build_user_message(job_page)
+    return _request_analysis(user_message, client)
 
-    response = client.messages.parse(
-        model=MODEL,
-        max_tokens=MAX_OUTPUT_TOKENS,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": user_message}],
-        output_format=JobAnalysis,
-    )
 
-    if response.stop_reason != "end_turn":
-        pass  # failed
+def _build_user_message(job_page: JobPageContent) -> str:
+    sections = [
+        _format_metadata(job_page.metadata),
+        _format_job_posting(job_page.job_posting),
+        _format_page_text(job_page.page_text),
+    ]
+
+    return "\n\n".join(section for section in sections if section)
+
+
+def _format_metadata(metadata: dict[str, str]) -> str | None:
+    if not metadata:
+        return None
+
+    return _wrap_json("metadata", metadata)
+
+
+def _format_job_posting(job_posting: dict | None) -> str | None:
+    if not job_posting:
+        return None
+
+    compact_posting = _drop_long_values(job_posting, keep={"description"})
+    if not compact_posting:
+        return None
+
+    return _wrap_json("job_posting", compact_posting)
+
+
+def _format_page_text(page_text: str) -> str | None:
+    if not page_text or not page_text.strip():
+        return None
+
+    return _wrap("page_text", page_text)
+
+
+def _request_analysis(user_message: str, client: Anthropic) -> JobAnalysis:
+    try:
+        response = client.messages.parse(
+            model=MODEL,
+            max_tokens=MAX_OUTPUT_TOKENS,
+            system=SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": user_message}],
+            output_format=JobAnalysis,
+        )
+    except AnthropicError as error:
+        raise JobAnalysisError(
+            FailureCategory.LLM_ERROR,
+            f"Anthropic request failed: {type(error).__name__}",
+        ) from error
+    except ValidationError as error:
+        raise JobAnalysisError(
+            FailureCategory.LLM_PARSE_ERROR,
+            "Model output did not match JobAnalysis (possibly truncated at max_tokens)",
+        ) from error
+
+    if response.parsed_output is None:
+        raise JobAnalysisError(
+            FailureCategory.LLM_PARSE_ERROR,
+            f"Model returned no structured output (stop_reason={response.stop_reason})",
+        )
 
     return response.parsed_output
 
 
-def _build_user_message(job_page: JobPageContent) -> str:
-    parts = []
-
-    if job_page.metadata:
-        metadata = _drop_long_values(job_page.metadata)
-        parts.append(_wrap("metadata", json.dumps(metadata, ensure_ascii=False)))
-
-    if job_page.job_posting:
-        job_posting = _drop_long_values(job_page.job_posting, keep={"description"})
-        parts.append(_wrap("job_posting", json.dumps(job_posting, ensure_ascii=False)))
-
-    if job_page.page_text:
-        parts.append(_wrap("page_text", job_page.page_text))
-
-    return "\n\n".join(parts)
-
-
-def _drop_long_values(fields: dict, keep: set[str] = frozenset()) -> dict:
+def _drop_long_values(fields: dict, keep: AbstractSet[str] = frozenset()) -> dict:
     return {
         key: value
         for key, value in fields.items()
         if key in keep or not (isinstance(value, str) and len(value) > MAX_FIELD_CHARS)
     }
+
+
+def _wrap_json(tag: str, payload: dict) -> str:
+    return _wrap(tag, json.dumps(payload, ensure_ascii=False))
 
 
 def _wrap(tag: str, content: str) -> str:

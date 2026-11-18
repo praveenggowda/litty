@@ -42,6 +42,12 @@ def parse_job_page(html: str) -> JobPageContent:
     job_posting = _extract_job_posting(soup)
     page_text = _extract_page_text(soup)  # must run last: it removes tags from the soup
 
+    if not (metadata or job_posting or page_text):
+        raise JobExtractionError(
+            FailureCategory.EMPTY_CONTENT,
+            "Job page has no metadata, structured posting, or visible text",
+        )
+
     return JobPageContent(
         metadata=metadata,
         job_posting=job_posting,

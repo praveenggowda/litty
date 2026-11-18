@@ -7,8 +7,8 @@ from pydantic import BaseModel, Field
 @dataclass
 class JobPageContent:
     metadata: dict[str, str]
-    page_text: str
     job_posting: dict | None = None
+    page_text: str = ""
 
 
 class ExtractedFact(BaseModel):

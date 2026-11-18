@@ -158,12 +158,11 @@ class TestFetchJobPage:
 
 class TestParseJobPage:
     @pytest.mark.parametrize("html", ["", "     "], ids=["empty", "whitespace"])
-    def test_returns_empty_content_for_blank_html(self, html):
-        job_page = parse_job_page(html)
+    def test_rejects_blank_html(self, html):
+        with pytest.raises(JobExtractionError) as exc_info:
+            parse_job_page(html)
 
-        assert job_page.metadata == {}
-        assert job_page.page_text == ""
-        assert job_page.job_posting is None
+        assert exc_info.value.category == FailureCategory.EMPTY_CONTENT
 
     def test_extracts_metadata(self):
         html = """
@@ -228,7 +227,9 @@ class TestParseJobPage:
         ids=["bad_json", "non_job_posting"],
     )
     def test_ignores_invalid_or_non_job_posting_json_ld(self, json_ld):
-        html = f'<script type="application/ld+json">{json_ld}</script>'
+        html = (
+            f'<script type="application/ld+json">{json_ld}</script><p>Job details</p>'
+        )
 
         job_page = parse_job_page(html)
 
