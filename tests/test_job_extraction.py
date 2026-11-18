@@ -18,6 +18,15 @@ class FakeResponse:
             raise requests.exceptions.HTTPError(response=self)
 
 
+def _real_response(body: bytes, content_type: str) -> requests.Response:
+    response = requests.Response()
+    response.status_code = 200
+    response._content = body
+    response.headers["Content-Type"] = content_type
+    response.encoding = requests.utils.get_encoding_from_headers(response.headers)
+    return response
+
+
 class TestFetchJobPage:
     @pytest.mark.parametrize(
         "job_url",
@@ -126,6 +135,25 @@ class TestFetchJobPage:
         monkeypatch.setattr("src.job_extraction.requests.get", fake_get)
 
         assert fetch_job_page(f"  {JOB_URL}  ") == "<p>Hi</p>"
+
+    @pytest.mark.parametrize(
+        ("html", "content_type", "encoding"),
+        [
+            ("<p>It’s £90k</p>", "text/html", "utf-8"),
+            ("<p>It’s £90k</p>", "text/html; charset=utf-8", "utf-8"),
+            ("<p>Café £90k</p>", "text/html; charset=iso-8859-1", "iso-8859-1"),
+        ],
+        ids=["no-charset", "declared-utf8", "declared-latin1"],
+    )
+    def test_decodes_html_using_the_right_encoding(
+        self, monkeypatch, html, content_type, encoding
+    ):
+        def fake_get(*args, **kwargs):
+            return _real_response(html.encode(encoding), content_type)
+
+        monkeypatch.setattr("src.job_extraction.requests.get", fake_get)
+
+        assert fetch_job_page(JOB_URL) == html
 
 
 class TestParseJobPage:

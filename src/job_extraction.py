@@ -118,6 +118,9 @@ def _download_html(job_url: str) -> str:
             f"Expected text/html, got {content_type or 'no content type'}",
         )
 
+    if "charset" not in content_type.lower():
+        response.encoding = response.apparent_encoding
+
     return response.text
 
 
