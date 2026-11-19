@@ -24,6 +24,13 @@ SYSTEM_PROMPT = dedent("""
     4. If information is not stated, return null or an empty list. Never guess.
     5. If sources disagree, prefer page_text.
     6. Copy each responsibility exactly as written, one item per responsibility.
+    7. Copy each requirement exactly as written, one item per requirement. What the person will do is a responsibility, not a requirement.
+    8. Give each requirement a priority, deciding in this order:
+       a. The requirement's own wording. Words such as "a plus", "ideally", "bonus", "preferred", "nice to have", "would be useful", "beneficial" or "not essential" make it DESIRABLE.
+       b. Its section heading or introduction. "Essential", "Required" or "Must have" means REQUIRED. "Desirable", "Nice to have" or "Bonus points" means DESIRABLE.
+       c. If neither says, it is REQUIRED.
+    9. If one sentence has both a required part and a desirable part, split it into two requirements. Each part must still be copied exactly from that sentence.
+       Example: "Strong Python experience; AWS knowledge is a plus" becomes "Strong Python experience" (REQUIRED) and "AWS knowledge is a plus" (DESIRABLE).
     """).strip()
 
 
