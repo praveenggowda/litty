@@ -16,11 +16,11 @@ logger = logging.getLogger(__name__)
 
 def main(argv: list[str] | None = None) -> None:
     args = _parse_args(argv)
-    output = run_job_pipeline(args.job_url, no_llm=args.no_llm)
+    output = run_job_analysis_pipeline(args.job_url, no_llm=args.no_llm)
     print(output)
 
 
-def run_job_pipeline(
+def run_job_analysis_pipeline(
     job_url: str,
     *,
     no_llm: bool = False,
@@ -41,13 +41,21 @@ def run_job_pipeline(
         return json.dumps(asdict(job_page), indent=2, ensure_ascii=False)
 
     job_analysis = analyse_job_page(job_page, client or Anthropic())
+
+    requirements = job_analysis.requirements
+    required = sum(1 for r in requirements if r.priority == "REQUIRED")
     logger.info(
         "Analysed job: title found: %s, company found: %s, location found: %s, "
-        "%d responsibilities",
+        "overview found: %s, %d responsibilities, "
+        "%d requirements (%d required, %d desirable)",
         job_analysis.job_title is not None,
         job_analysis.company is not None,
         job_analysis.location is not None,
+        job_analysis.role_overview is not None,
         len(job_analysis.responsibilities),
+        len(requirements),
+        required,
+        len(requirements) - required,
     )
 
     return job_analysis.model_dump_json(indent=2)
@@ -55,7 +63,7 @@ def run_job_pipeline(
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Hey, I'm Litty! 🔥 Drop a job link and let's get your CV lit."
+        description="Hey, I'm Litty! 💡 Drop a job link and let's get your CV lit."
     )
     parser.add_argument(
         "job_url", help="URL of the job posting you want Litty to analyse"
