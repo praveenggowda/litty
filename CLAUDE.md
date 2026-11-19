@@ -133,7 +133,7 @@ The UI mockup is at [docs/images/ui-agent-mockup.png](docs/images/ui-agent-mocku
 
 ## How we build
 
-Litty grows in increments: Skateboard → Bicycle → Motorbike → Car → Aeroplane.
+Litty grows in increments: Skateboard → Bicycle → Motorbike → Car.
 
 Each increment is a usable product that builds on the previous one.
 
