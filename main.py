@@ -16,11 +16,11 @@ logger = logging.getLogger(__name__)
 
 def main(argv: list[str] | None = None) -> None:
     args = _parse_args(argv)
-    output = run_job_analysis_pipeline(args.job_url, no_llm=args.no_llm)
+    output = analyse_job_from_url(args.job_url, no_llm=args.no_llm)
     print(output)
 
 
-def run_job_analysis_pipeline(
+def analyse_job_from_url(
     job_url: str,
     *,
     no_llm: bool = False,
