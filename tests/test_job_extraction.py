@@ -8,12 +8,14 @@ JOB_URL = "https://example.com"
 
 
 class FakeResponse:
-    def __init__(self, text="", content_type="text/html", status_code=200):
+    def __init__(
+        self, text: str = "", content_type: str = "text/html", status_code: int = 200
+    ) -> None:
         self.text = text
         self.headers = {"Content-Type": content_type}
         self.status_code = status_code
 
-    def raise_for_status(self):
+    def raise_for_status(self) -> None:
         if self.status_code >= 400:
             raise requests.exceptions.HTTPError(response=self)
 
@@ -27,7 +29,24 @@ def _real_response(body: bytes, content_type: str) -> requests.Response:
     return response
 
 
+def _get_returning(
+    monkeypatch: pytest.MonkeyPatch, response: FakeResponse | requests.Response
+) -> None:
+    monkeypatch.setattr(
+        "src.job_extraction.requests.get", lambda *args, **kwargs: response
+    )
+
+
+def _get_raising(monkeypatch: pytest.MonkeyPatch, error: Exception) -> None:
+    def fail(*args, **kwargs):
+        raise error
+
+    monkeypatch.setattr("src.job_extraction.requests.get", fail)
+
+
 class TestFetchJobPage:
+    # Errors
+
     @pytest.mark.parametrize(
         "job_url",
         [
@@ -80,10 +99,7 @@ class TestFetchJobPage:
     def test_maps_request_failure_to_inaccessible(
         self, monkeypatch, error, expected_message
     ):
-        def fake_get(*args, **kwargs):
-            raise error
-
-        monkeypatch.setattr("src.job_extraction.requests.get", fake_get)
+        _get_raising(monkeypatch, error)
 
         with pytest.raises(JobExtractionError) as exc_info:
             fetch_job_page(JOB_URL)
@@ -98,10 +114,7 @@ class TestFetchJobPage:
         ids=["pdf", "json", "missing"],
     )
     def test_rejects_unsupported_content_type(self, monkeypatch, content_type):
-        def fake_get(*args, **kwargs):
-            return FakeResponse(content_type=content_type)
-
-        monkeypatch.setattr("src.job_extraction.requests.get", fake_get)
+        _get_returning(monkeypatch, FakeResponse(content_type=content_type))
 
         with pytest.raises(JobExtractionError) as exc_info:
             fetch_job_page(JOB_URL)
@@ -114,10 +127,7 @@ class TestFetchJobPage:
 
     @pytest.mark.parametrize("status_code", [403, 404, 500])
     def test_maps_http_error_to_inaccessible(self, monkeypatch, status_code):
-        def fake_get(*args, **kwargs):
-            return FakeResponse(status_code=status_code)
-
-        monkeypatch.setattr("src.job_extraction.requests.get", fake_get)
+        _get_returning(monkeypatch, FakeResponse(status_code=status_code))
 
         with pytest.raises(JobExtractionError) as exc_info:
             fetch_job_page(JOB_URL)
@@ -126,13 +136,13 @@ class TestFetchJobPage:
         assert exc_info.value.status_code == status_code
         assert str(exc_info.value) == f"HTTP {status_code}"
 
-    def test_returns_html(self, monkeypatch):
-        def fake_get(*args, **kwargs):
-            return FakeResponse(
-                text="<p>Hi</p>", content_type="text/html; charset=utf-8"
-            )
+    # Success
 
-        monkeypatch.setattr("src.job_extraction.requests.get", fake_get)
+    def test_returns_html(self, monkeypatch):
+        _get_returning(
+            monkeypatch,
+            FakeResponse(text="<p>Hi</p>", content_type="text/html; charset=utf-8"),
+        )
 
         assert fetch_job_page(f"  {JOB_URL}  ") == "<p>Hi</p>"
 
@@ -148,21 +158,22 @@ class TestFetchJobPage:
     def test_decodes_html_using_the_right_encoding(
         self, monkeypatch, html, content_type, encoding
     ):
-        def fake_get(*args, **kwargs):
-            return _real_response(html.encode(encoding), content_type)
-
-        monkeypatch.setattr("src.job_extraction.requests.get", fake_get)
+        _get_returning(monkeypatch, _real_response(html.encode(encoding), content_type))
 
         assert fetch_job_page(JOB_URL) == html
 
 
 class TestParseJobPage:
+    # Input
+
     @pytest.mark.parametrize("html", ["", "     "], ids=["empty", "whitespace"])
     def test_rejects_blank_html(self, html):
         with pytest.raises(JobExtractionError) as exc_info:
             parse_job_page(html)
 
         assert exc_info.value.category == FailureCategory.EMPTY_CONTENT
+
+    # Metadata
 
     def test_extracts_metadata(self):
         html = """
@@ -201,6 +212,8 @@ class TestParseJobPage:
 
         assert job_page.metadata == {}
 
+    # Job posting
+
     @pytest.mark.parametrize(
         "json_ld",
         [
@@ -234,6 +247,8 @@ class TestParseJobPage:
         job_page = parse_job_page(html)
 
         assert job_page.job_posting is None
+
+    # Page text
 
     def test_removes_non_content_tags_from_page_text(self):
         html = """
