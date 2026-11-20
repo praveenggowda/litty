@@ -14,9 +14,6 @@ class FailureCategory(StrEnum):
     LLM_ERROR = "LLM_ERROR"
     LLM_PARSE_ERROR = "LLM_PARSE_ERROR"
 
-    # Catch-all fallback
-    ANALYSIS_FAILED = "ANALYSIS_FAILED"
-
 
 class LittyError(Exception):
     def __init__(

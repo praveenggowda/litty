@@ -9,7 +9,6 @@ FRIENDLY_MESSAGES: dict[FailureCategory, str] = {
     FailureCategory.EMPTY_CONTENT: "I couldn't find any job advert text on that page. Please paste the advert text instead.",
     FailureCategory.LLM_ERROR: "The analysis service is unavailable right now. Please try again in a moment.",
     FailureCategory.LLM_PARSE_ERROR: "I read the job page but couldn't analyse the advert. Please try again in a moment.",
-    FailureCategory.ANALYSIS_FAILED: "I read the job page but couldn't analyse the advert. Please try again in a moment.",
 }
 
 
